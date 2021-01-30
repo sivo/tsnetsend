@@ -9,9 +9,13 @@ type SendOptions = {
   command: "on" | "off" | "dim" | "learn"
 };
 
-export function getPacket(options: SendOptions): Buffer {
+export function getSendPacket(options: SendOptions): Buffer {
   const payload = protocols.arctech.getPayload(options);
   const data = encode('send') + encode({'S': payload})
 
   return Buffer.from(data, 'ascii');
+}
+
+export function getDiscoverPacket(): Buffer {
+  return Buffer.from('D');
 }

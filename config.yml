@@ -1,0 +1,12 @@
+tellstickNetIp: 192.168.2.21
+mqtt:
+  enabled: true
+  host: localhost
+  port: 1883    
+devices:
+  - name: TD_S_1
+    type: switch
+    protocol: arctech
+    model: selflearning
+    house: 6008049
+    unit: 1

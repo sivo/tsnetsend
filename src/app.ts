@@ -1,5 +1,7 @@
 import {createSocket} from 'dgram';
-import { getPacket } from './netCommunication';
+import { getConfiguration } from './configuration';
+import { getDiscoverPacket, getSendPacket } from './netCommunication';
+import * as mqtt from 'mqtt';
 
 const server = createSocket('udp4');
 
@@ -21,6 +23,11 @@ server.on('listening',function(){
   console.log('Server is listening at port' + port);
   console.log('Server ip :' + ipaddr);
   console.log('Server is IP4/IP6 : ' + family);
+
+  server.setBroadcast(true);
+  server.send(getDiscoverPacket(), 30303, '192.168.2.21', (err) => {
+    console.log('discover sent', err);
+  });
 });
 
 //emits after the socket is closed using socket.close();
@@ -30,7 +37,8 @@ server.on('close',function(){
 
 server.bind(3000);
 
-const bufferOn = getPacket({
+if (false) {
+const bufferOn = getSendPacket({
   protocol: 'arctech',
   model: 'selflearning',
   house: 6008049,
@@ -38,7 +46,7 @@ const bufferOn = getPacket({
   command: 'on'
 });
 
-const bufferOff = getPacket({
+const bufferOff = getSendPacket({
   protocol: 'arctech',
   model: 'selflearning',
   house: 6008049,
@@ -53,3 +61,20 @@ server.send(bufferOn, 42314, '192.168.2.21', (err) => {
     console.log('off sent', err);
   });
 });
+}
+
+
+async function initialize() {
+  const config = await getConfiguration();
+  console.log('Configuration:', await getConfiguration());
+
+  if (config.mqtt.enabled) {
+    await mqtt.initialize();
+  }
+}
+
+async function logConfig() {
+}
+
+initialize();
+
