@@ -1,15 +1,17 @@
+import { Command, Model } from "../types";
+
 const LONG = '\x7f';
 const SHORT = '\x18';
 const ONE = SHORT + LONG + SHORT + SHORT;
 const ZERO = SHORT + SHORT + SHORT + LONG;
 
 export type Options = {
-  model: "selflearning" | "codeswitch" | "bell";
+  model: Model;
   house: string | number;
   unit: number;
   group?: number;
   level?: number;
-  command: 'on' | 'off' | 'dim' | 'learn' | 'bell';
+  command: Command;
 }
 
 export function getPayload(options) {
@@ -21,17 +23,17 @@ export function getPayload(options) {
 
   let result = SHORT + String.fromCharCode(255);
 
-  if (options.command === 'dim' && options.level === 0) {
-    options.command = 'off';
+  if (options.command === Command.dim && options.level === 0) {
+    options.command = Command.off;
   }
 
   result += toBits(options.house, 26); 
 
   result += options.group === 1 ? ONE : ZERO;
 
-  if (options.command === 'dim') {
+  if (options.command === Command.dim) {
     result += SHORT + SHORT + SHORT + SHORT;
-  } else if (options.command === 'off') {
+  } else if (options.command === Command.off) {
     result += ZERO;
   } else {
     result += ONE;
@@ -39,7 +41,7 @@ export function getPayload(options) {
 
   result += toBits(options.unit, 4);
   
-  if (options.command === 'dim') {
+  if (options.command === Command.dim) {
     const level = Math.ceil(options.level / 16);
     result += toBits(level, 4);
   }

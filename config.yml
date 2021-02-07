@@ -1,6 +1,7 @@
-tellstickNetIp: 192.168.2.21
+tellstickNetIp: 192.168.2.1
+logLevel: debug
 mqtt:
-  enabled: true
+  enabled: false
   host: localhost
   port: 1883    
 devices:

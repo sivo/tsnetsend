@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY package.json /app/
 
-RUN yarn
+RUN mkdir /config \
+ && yarn
 
 CMD ts-node app.js

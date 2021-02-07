@@ -1,7 +1,11 @@
-import { promisify } from 'util';
 import { readFile } from 'fs/promises';
 import { parse } from 'yaml';
 import * as protocols from './protocols/index';
+
+const possibleConfigFiles = [
+  '/config/config.yml',
+  `${__dirname}/../config.yml`,
+]
 
 export type DeviceConfiguration = {
   name: string;
@@ -31,9 +35,21 @@ export async function getConfiguration(): Promise<Configuration> {
 configurationPromise = readConfiguration();
 
 async function readConfiguration(): Promise<Configuration> {
-  const contents = await readFile(`${__dirname}/../config.yml`);
+  let contents: string;
+
+  for (const fileName of possibleConfigFiles) {
+    try {
+      contents = await readFile(fileName, 'utf8');
+      break;
+    } catch (err) {}
+  }
+
+  if (!contents) {
+    console.error('Configuration file not found');
+  }
+  
   try {
-    return parse(contents.toString('utf8'))
+    return parse(contents)
   } catch (err) {
     console.error(`Error when reading or parsing configuration: ${err.message}`);
     throw err;
