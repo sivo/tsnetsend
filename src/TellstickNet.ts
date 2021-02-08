@@ -25,6 +25,8 @@ export default class TellstickNet {
   }
 
   public async command(deviceName: string, command: Command): Promise<boolean> {
+    log.debug(`Trying to execute command ${command} towards ${deviceName}`);
+
     try {
       if (!(deviceName in this.devices)) {
         throw(new Error(`Unknown device: ${deviceName}`));

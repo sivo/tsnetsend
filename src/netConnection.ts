@@ -121,7 +121,7 @@ async function sendCommandTask(host: string, device: DeviceConfiguration, comman
     });
     
     client.on('close',function(){
-      log.info('Socket is closed!');
+      log.debug('Socket is closed!');
     });
 
     const message = getSendPacket(device, command);

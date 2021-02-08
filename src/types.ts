@@ -1,4 +1,4 @@
-export const enum Command {
+export enum Command {
   on = 'on',
   off = 'off',
   dim = 'dim',
@@ -6,8 +6,13 @@ export const enum Command {
   bell = 'bell',
 };
 
-export const enum Model {
+export enum Type {
+  switch = 'switch',
+};
+
+export enum Model {
   selflearning = 'selflearning',
   codeswitch = 'codeswitch',
   bell = 'bell',
 };
+

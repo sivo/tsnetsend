@@ -19,14 +19,17 @@ async function initialize() {
     log.info(`Tellstick found at ${config.tellstickNetIp}`);
   }
   
-  await tellstick.on('AN_1');
-  await tellstick.off('AN_1');
-  await tellstick.on('AN_1');
-  await tellstick.off('AN_1');
-
+  // await tellstick.on('AN_1');
+  // await tellstick.off('AN_1');
+  // await tellstick.on('AN_1');
+  // await tellstick.off('AN_1');
 
   if (config.mqtt.enabled) {
-    await mqtt.initialize(tellstick.command.bind(tellstick));
+    try {
+      await mqtt.initialize(tellstick.command.bind(tellstick));
+    } catch(err) {
+      log.error(`Unable to connect to MQTT: ${err.message}`);
+    }
   }
 }
 

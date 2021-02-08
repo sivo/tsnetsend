@@ -1,5 +1,7 @@
 import { getConfiguration, DeviceConfiguration, Configuration } from './configuration';
 import { connectAsync, AsyncClient } from 'async-mqtt';
+import { log } from './log';
+import { Command, Type } from './types';
 
 const register = {
   switch: registerSwitch,
@@ -14,7 +16,7 @@ let config: Configuration;
 
 const topicPrefix = 'homeassistant';
 
-export type CommandHandler = (device: DeviceConfiguration, command: string) => Promise<boolean>;
+export type CommandHandler = (deviceName: string, command: Command) => Promise<boolean>;
 
 export async function initialize(commandHandler: CommandHandler) {
   config = await getConfiguration();
@@ -26,29 +28,42 @@ export async function initialize(commandHandler: CommandHandler) {
 }
 
 function handleMessages(commandHandler: CommandHandler) {
-  const commandTopicRegex = new RegExp(`${topicPrefix}/([^/])+/([^/])+/set`);
+  const commandTopicRegex = new RegExp(`${topicPrefix}/([^/]+)/([^/]+)/set`);
 
   client.on('message', (topic, message) => {
+    log.debug(`Message from MQTT: Topic: ${topic} Message: ${message}`)
+
     let match;
 
     if (match = topic.match(commandTopicRegex)) {
-      const name = match[2];
-      const device = config.devices.find((entry) => entry.name === name);
-      
-      if (!device) {
+      const rawDeviceType = match[1];
+      const rawDeviceName = match[2];
+      const rawCommand = message.toString('latin1').toLowerCase();
+
+      if (!(rawDeviceType in Type)) {
+        log.debug(`Unknown device type: ${rawDeviceType}`);
         return;
       }
       
-      const success = commandHandler(device, message.toString('latin1'));
+      if (!(rawCommand in Command)) {
+        log.debug(`Unknown command: ${rawCommand}`);
+        return;
+      }
+
+      const type = rawDeviceType as Type;
+      const command = rawCommand as Command;
+
+      const success = commandHandler(rawDeviceName, command);
 
       if (!success) {
         return;
       }
 
       try {
-        client.publish(getStateTopic(device), message);
+        log.debug(`Settings state for ${rawDeviceType} to ${message}`);
+        client.publish(getStateTopic(type, rawDeviceName), message);
       } catch(err) {
-        console.error(`Unable to update state for device ${device.name}: ${err.message}`);
+        log.error(`Unable to update state for device ${rawDeviceType}: ${err.message}`);
       }
     }
   });
@@ -57,53 +72,56 @@ function handleMessages(commandHandler: CommandHandler) {
 async function subscribeDevices() {
   try {
     for (const device of config.devices) {
-      await subscribe[device.type](device);
-      console.log(`Subscribed to device: ${device.name}`);
+      await subscribe[device.type](device.type, device.name);
+      log.info(`Subscribed to device: ${device.name}`);
     }
   } catch (err) {
-    console.error(`Failed to subscribe to device. Error: ${err.message}`);
+    log.error(`Failed to subscribe to device. Error: ${err.message}`);
   }
 }
 
 async function registerDevices() {
   try {
     for (const device of config.devices) {
-      await register[device.type](device);
-      console.log(`Registered device: ${device.name}`);
+      await register[device.type](device.type, device.name);
+      log.info(`Registered device: ${device.name}`);
     }
   } catch (err) {
-    console.error(`Failed to register device. Error: ${err.message}`);
+    log.error(`Failed to register device. Error: ${err.message}`);
   }
 }
 
-async function subscribeSwitch(device: DeviceConfiguration) {
-  const topic = getCommandTopic(device);
+async function subscribeSwitch(type: string, deviceName: string) {
+  const topic = getCommandTopic(type, deviceName);
 
   await client.subscribe(topic);
 }
 
-async function registerSwitch(device: DeviceConfiguration) {
-  const topic = getConfigTopic(device);
+async function registerSwitch(type: string, deviceName: string) {
+  const topic = getConfigTopic(type, deviceName);
   const message = JSON.stringify({
-    name: device.name,
-    command_topic: getCommandTopic(device),
-    state_topic: getStateTopic(device),
+    name: deviceName,
+    unique_id: deviceName,
+    command_topic: getCommandTopic(type, deviceName),
+    state_topic: getStateTopic(type, deviceName),
   });
   
+  log.debug(`Registering ${type} ${deviceName} by sending the following to topic ${topic}: ${message}`);
+
   await client.publish(topic, message);
 }
 
-function getConfigTopic(device: DeviceConfiguration) {
-  return `${getDeviceTopic(device)}/config`;
+function getConfigTopic(type: string, deviceName: string) {
+  return `${getDeviceTopic(type, deviceName)}/config`;
 }
-function getCommandTopic(device: DeviceConfiguration) {
-  return `${getDeviceTopic(device)}/set`;
-}
-
-function getStateTopic(device: DeviceConfiguration) {
-  return `${getDeviceTopic(device)}/state`;
+function getCommandTopic(type: string, deviceName: string) {
+  return `${getDeviceTopic(type, deviceName)}/set`;
 }
 
-function getDeviceTopic(device: DeviceConfiguration) {
-  return `${topicPrefix}/${device.type}/${device.name}`;
+function getStateTopic(type: string, deviceName: string) {
+  return `${getDeviceTopic(type, deviceName)}/state`;
+}
+
+function getDeviceTopic(type: string, deviceName: string) {
+  return `${topicPrefix}/${type}/${deviceName}`;
 }
