@@ -7,13 +7,17 @@ const possibleConfigFiles = [
   `${__dirname}/../config.yml`,
 ]
 
+type Parameters = {
+  house: string | number;
+  unit: number;
+}
+
 export type DeviceConfiguration = {
   name: string;
   type: 'switch';
   protocol: keyof typeof protocols;
   model: "selflearning" | "codeswitch";
-  house: string | number;
-  unit: number;
+  parameters: Parameters[];
 }
 
 export type Configuration = {
@@ -35,7 +39,7 @@ export async function getConfiguration(): Promise<Configuration> {
 configurationPromise = readConfiguration();
 
 async function readConfiguration(): Promise<Configuration> {
-  let contents: string;
+  let contents: string | undefined = undefined;
 
   for (const fileName of possibleConfigFiles) {
     try {
@@ -46,6 +50,7 @@ async function readConfiguration(): Promise<Configuration> {
 
   if (!contents) {
     console.error('Configuration file not found');
+    throw new Error('Configuration file not found');
   }
   
   try {

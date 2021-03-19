@@ -1,5 +1,5 @@
 import { createSocket } from "dgram";
-import { getDiscoverPacket, getSendPacket } from "./netPackets";
+import { getDiscoverPacket, getListenPacket, getSendPacket } from "./netPackets";
 import { log } from './log';
 import { DeviceConfiguration } from "./configuration";
 import { Command } from "./types";
@@ -48,7 +48,7 @@ async function runTasks() {
   tasksRunning = true;
 
   while(tasks.length) {
-    tasks.shift().run();
+    tasks.shift()?.run();
     await new Promise((resolve) => setTimeout(resolve, restPeriod));    
   }
 
@@ -59,8 +59,12 @@ export async function checkAlive(host: string): Promise<boolean> {
   return addTask(checkAliveTask.bind(null, host));
 }
 
-export async function sendCommand(host: string, device: DeviceConfiguration, command: Command) {
+export async function sendCommand(host: string, device: DeviceConfiguration, command: Command): Promise<void> {
   return addTask(sendCommandTask.bind(null, host, device, command));
+}
+
+export async function listen(host: string, callback: (message: Record<string, unknown>) => void): Promise<void> {
+  return addTask(registerListenerTask.bind(null, host, callback));
 }
 
 async function checkAliveTask(host: string): Promise<boolean> {
@@ -71,6 +75,7 @@ async function checkAliveTask(host: string): Promise<boolean> {
     }, responseTimeout);
 
     const client = createSocket('udp4');
+    client.unref();
     
     client.on('error', (err) => {
       reject(`Error checking connectivity: ${err.message}`);
@@ -99,7 +104,7 @@ async function checkAliveTask(host: string): Promise<boolean> {
 
     client.on('close', () => {
       log.debug('Discover client closed');
-    })
+    });
     
     client.bind();
   });
@@ -108,6 +113,7 @@ async function checkAliveTask(host: string): Promise<boolean> {
 async function sendCommandTask(host: string, device: DeviceConfiguration, command: Command): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const client = createSocket('udp4');
+    client.unref();
 
     client.on('error', (err) => {
       client.close();
@@ -133,6 +139,43 @@ async function sendCommandTask(host: string, device: DeviceConfiguration, comman
       }
 
       client.close();
+      return resolve();
+    });
+  });
+}
+
+async function registerListenerTask(host: string, callback: (message: Record<string, unknown>) => never): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const client = createSocket('udp4');
+    client.unref();
+
+    client.on('error', (err) => {
+      client.close();
+      return reject(`Error in listener: ${err}`);
+    });
+    
+    client.on('connect', function(err){
+      if (err) {
+        return reject(`Listener connect error: ${err.message}`);
+      }
+    });
+    
+    client.on('close',function(){
+      log.debug('Listener socket is closed!');
+    });
+
+    client.on('message', (msg, info) => {
+      log.debug('Listener client received %d bytes from %s:%d', msg.length, info.address, info.port);
+      log.debug('Data received from listener client : ' + msg.toString());
+    });
+
+    const message = getListenPacket();
+    log.debug(`Sending listener request to ${host}:${communicationPort}`);
+    client.send(message, communicationPort, host, (err) => {
+      if (err) {
+        return reject(`Failed to send UDP packet: ${err.message}`);
+      }
+
       return resolve();
     });
   });

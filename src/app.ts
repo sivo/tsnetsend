@@ -12,6 +12,7 @@ async function initialize() {
   const tellstick = new TellstickNet(config.tellstickNetIp, config.devices);
 
   const alive = await tellstick.checkAlive();
+  tellstick.listen();
 
   if (!alive) {
     log.error(`No discovery reply from ${config.tellstickNetIp}`);

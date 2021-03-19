@@ -1,4 +1,4 @@
-import { getConfiguration, DeviceConfiguration, Configuration } from './configuration';
+import { getConfiguration, Configuration } from './configuration';
 import { connectAsync, AsyncClient } from 'async-mqtt';
 import { log } from './log';
 import { Command, Type } from './types';
@@ -25,6 +25,12 @@ export async function initialize(commandHandler: CommandHandler) {
   handleMessages(commandHandler);
   await subscribeDevices();
   await registerDevices();
+}
+
+export async function stop() {
+  if (client) {
+    await client.end()
+  }
 }
 
 function handleMessages(commandHandler: CommandHandler) {

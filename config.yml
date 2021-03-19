@@ -9,5 +9,6 @@ devices:
     type: switch
     protocol: arctech
     model: selflearning
-    house: 6008049
-    unit: 1
+    parameters:
+      - house: 6008049
+        unit: 1
