@@ -1,24 +1,11 @@
 import { readFile } from 'fs/promises';
 import { parse } from 'yaml';
-import * as protocols from './protocols/index';
+import { DeviceConfiguration } from './types';
 
 const possibleConfigFiles = [
   '/config/config.yml',
   `${__dirname}/../config.yml`,
 ]
-
-type Parameters = {
-  house: string | number;
-  unit: number;
-}
-
-export type DeviceConfiguration = {
-  name: string;
-  type: 'switch';
-  protocol: keyof typeof protocols;
-  model: "selflearning" | "codeswitch";
-  parameters: Parameters[];
-}
 
 export type Configuration = {
   devices: DeviceConfiguration[];

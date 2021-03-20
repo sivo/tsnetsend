@@ -1,11 +1,10 @@
 import { createSocket } from "dgram";
-import { getDiscoverPacket, getListenPacket, getSendPacket } from "./netPackets";
+import { getDiscoverPacket, getListenPacket, getSendPacket, decodeMessage } from "./netPackets";
 import { log } from './log';
-import { DeviceConfiguration } from "./configuration";
-import { Command } from "./types";
+import { Command, Value, DeviceConfiguration } from "./types";
 
-const tasks: PromisedTask<unknown>[] = [];
-let tasksRunning;
+const tasks: PromisedTask<any>[] = [];
+let tasksRunning: boolean;
 const restPeriod = 500;
 const responseTimeout = 500;
 const discoverPort = 30303;
@@ -16,12 +15,12 @@ interface Task<T> {
 }
 
 class PromisedTask<T> {
-  private resolve;
-  private reject;
-  public promise;
+  private resolve!: (value: T) => void;
+  private reject!: (reason?: any) => void;
+  public promise: Promise<T>;
 
   constructor(private task: Task<T>) {
-    this.promise = new Promise((res, rej) => {
+    this.promise = new Promise<T>((res, rej) => {
       this.resolve = res;
       this.reject = rej;
     })
@@ -63,7 +62,7 @@ export async function sendCommand(host: string, device: DeviceConfiguration, com
   return addTask(sendCommandTask.bind(null, host, device, command));
 }
 
-export async function listen(host: string, callback: (message: Record<string, unknown>) => void): Promise<void> {
+export async function listen(host: string, callback: (message: Value) => void): Promise<void> {
   return addTask(registerListenerTask.bind(null, host, callback));
 }
 
@@ -120,12 +119,6 @@ async function sendCommandTask(host: string, device: DeviceConfiguration, comman
       return reject(`Error in server: ${err}`);
     });
     
-    client.on('connect', function(err){
-      if (err) {
-        return reject(`Connect error: ${err.message}`);
-      }
-    });
-    
     client.on('close',function(){
       log.debug('Socket is closed!');
     });
@@ -144,7 +137,7 @@ async function sendCommandTask(host: string, device: DeviceConfiguration, comman
   });
 }
 
-async function registerListenerTask(host: string, callback: (message: Record<string, unknown>) => never): Promise<void> {
+async function registerListenerTask(host: string, callback: (message: Value) => void): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const client = createSocket('udp4');
     client.unref();
@@ -154,12 +147,6 @@ async function registerListenerTask(host: string, callback: (message: Record<str
       return reject(`Error in listener: ${err}`);
     });
     
-    client.on('connect', function(err){
-      if (err) {
-        return reject(`Listener connect error: ${err.message}`);
-      }
-    });
-    
     client.on('close',function(){
       log.debug('Listener socket is closed!');
     });
@@ -167,6 +154,7 @@ async function registerListenerTask(host: string, callback: (message: Record<str
     client.on('message', (msg, info) => {
       log.debug('Listener client received %d bytes from %s:%d', msg.length, info.address, info.port);
       log.debug('Data received from listener client : ' + msg.toString());
+      callback(decodeMessage(msg));
     });
 
     const message = getListenPacket();

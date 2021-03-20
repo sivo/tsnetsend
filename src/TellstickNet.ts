@@ -1,7 +1,6 @@
 import { log } from './log';
-import { DeviceConfiguration } from './configuration';
 import { checkAlive, sendCommand, listen } from './netConnection';
-import { Command } from './types';
+import { Command, DeviceConfiguration } from './types';
 
 export default class TellstickNet {
   private devices: Record<string, DeviceConfiguration> = {};

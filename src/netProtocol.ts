@@ -1,4 +1,6 @@
-export function encode(input): string {
+import {Value, ValueMap} from './types';
+
+export function encode(input: Value): string {
   if (input == null) {
     throw new Error(`Can\'t encode ${input}`);
   }
@@ -33,24 +35,13 @@ const strRegex = /^([A-F0-9]+):(.*)$/;
 const lstRegex = /^l(.*)$/;
 const objRegex = /^h(.*)$/;
 
-export function decode(input: string): any {
+export function decode(input: string): Value {
   return decodeInternal(input).value;
 }
 
-function decodeInternal(input: string): {value: any, rest: string} {
+function decodeInternal(input: string): {value: Value, rest: string } {
   const outputFront = '';
   const outputEnd = '';
-
-  if (!input) {
-    return {
-      value: undefined,
-      rest: undefined
-    };
-  }
-
-  if (input.startsWith('7:RawData')) {
-    input = input.substring(9);
-  }
 
   let match;
   match = input.match(nrRegex);
@@ -90,14 +81,14 @@ function decodeInternal(input: string): {value: any, rest: string} {
 
   match = input.match(objRegex);
   if (match) {
-    const result = {};
+    const result: ValueMap = {};
     let rest = match[1];
     let key, value;
 
     while (rest && rest[0] !== 's') {
       ({rest, value: key} = decodeInternal(rest));
       ({rest, value} = decodeInternal(rest));
-      result[key] = value;
+      result[key as string] = value;
     }
 
     return {
@@ -105,4 +96,9 @@ function decodeInternal(input: string): {value: any, rest: string} {
       rest: rest?.substring(1)
     }
   }
+
+  return {
+    value: undefined,
+    rest: ''
+  };
 }

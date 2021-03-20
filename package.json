@@ -1,7 +1,7 @@
 {
   "name": "tsnetsend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/app.ts",
   "repository": "https://github.com/sivoo/tsnetsend.git",
   "license": "MIT",
   "dependencies": {
@@ -16,5 +16,8 @@
     "@types/node": "^14.14.14",
     "jest": "^26.6.3",
     "ts-jest": "^26.4.4"
+  },
+  "scripts": {
+    "dev": "ts-node src/app.ts"
   }
 }
