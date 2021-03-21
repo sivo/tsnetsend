@@ -1,6 +1,6 @@
 import { log } from './log';
 import { checkAlive, sendCommand, listen } from './netConnection';
-import { Command, DeviceConfiguration } from './types';
+import { Command, DeviceConfiguration, isOperation, Value } from './types';
 
 export default class TellstickNet {
   private devices: Record<string, DeviceConfiguration> = {};
@@ -15,8 +15,22 @@ export default class TellstickNet {
     return await checkAlive(this.host);
   }
 
-  public async listen(): Promise<void> {
-    return await listen(this.host, (obj) => console.log('Got object: ', obj));
+  public async listen(callback: (device: DeviceConfiguration, command: Command) => void): Promise<void> {
+    return await listen(this.host, (message: Value) => {
+      console.log('Got value: ', message);
+      if (isOperation(message)) {
+        const matchedDevices = Object.values(this.devices).filter((device: DeviceConfiguration) => {
+          const parametersMatch = device.parameters.some((param) => {
+            return param.house === message.house && 
+              param.unit === message.unit;
+          });
+
+          return parametersMatch;
+        });
+
+        matchedDevices.forEach((device) => callback(device, message.command));
+      }
+    });
   }
 
   public async on(deviceName: string): Promise<boolean> {

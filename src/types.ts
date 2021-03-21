@@ -14,6 +14,15 @@ export type Operation = Parameters & {
   level?: number;
 };
 
+export function isOperation(operation: unknown): operation is Operation {
+  if (typeof operation !== 'object' || operation == null) {
+    return false;
+  }
+  
+  const op = operation as Operation;
+  return !!op.command && !!op.house && !!op.unit && true;
+}
+
 export enum Type {
   switch = 'switch',
 };

@@ -108,9 +108,9 @@ export function decodePayload(payload: string): Operation {
 }
 
 export function decodeData(data: number): Operation {
-  const house: number = ((data & 0xFFFFFFC0) >>> 0) >> 6 >> 2;
-  const group: number = ((data & 0x20) >>> 0) >> 5;
-  const command: Command = (((data & 0x10) >>> 0) >> 4) ? Command.on : Command.off;
+  const house: number = ((data & 0xFFFFFFC0) >> 6 >> 2) >>> 0;
+  const group: number = ((data & 0x20) >> 5 ) >>> 0;
+  const command: Command = (((data & 0x10) >> 4) >>> 0) ? Command.on : Command.off;
   const unit: number = ((data & 0xf) >>> 0)+ 1;
   return {house, group, command, unit};
 }

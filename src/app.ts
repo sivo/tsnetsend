@@ -12,7 +12,6 @@ async function initialize() {
   const tellstick = new TellstickNet(config.tellstickNetIp, config.devices);
 
   const alive = await tellstick.checkAlive();
-  tellstick.listen();
 
   if (!alive) {
     log.error(`No discovery reply from ${config.tellstickNetIp}`);
@@ -20,14 +19,12 @@ async function initialize() {
     log.info(`Tellstick found at ${config.tellstickNetIp}`);
   }
   
-  // await tellstick.on('AN_1');
-  // await tellstick.off('AN_1');
-  // await tellstick.on('AN_1');
-  // await tellstick.off('AN_1');
-
   if (config.mqtt.enabled) {
     try {
       await mqtt.initialize(tellstick.command.bind(tellstick));
+      tellstick.listen((device, command) => {
+        mqtt.updateState(device.type, device.name, command);
+      });
     } catch(err) {
       log.error(`Unable to connect to MQTT: ${err.message}`);
     }

@@ -16,13 +16,13 @@ let config: Configuration;
 
 const topicPrefix = 'homeassistant';
 
-export type CommandHandler = (deviceName: string, command: Command) => Promise<boolean>;
+export type CommandExecutor = (deviceName: string, command: Command) => Promise<boolean>;
 
-export async function initialize(commandHandler: CommandHandler) {
+export async function initialize(commandExecutor: CommandExecutor) {
   config = await getConfiguration();
   client = await connectAsync(`tcp://${config.mqtt.host}:${config.mqtt.port}`);
 
-  handleMessages(commandHandler);
+  handleMessages(commandExecutor);
   await subscribeDevices();
   await registerDevices();
 }
@@ -33,7 +33,7 @@ export async function stop() {
   }
 }
 
-function handleMessages(commandHandler: CommandHandler) {
+function handleMessages(commandExecutor: CommandExecutor) {
   const commandTopicRegex = new RegExp(`${topicPrefix}/([^/]+)/([^/]+)/set`);
 
   client.on('message', (topic, message) => {
@@ -44,7 +44,7 @@ function handleMessages(commandHandler: CommandHandler) {
     if (match = topic.match(commandTopicRegex)) {
       const rawDeviceType = match[1];
       const rawDeviceName = match[2];
-      const rawCommand = message.toString('latin1').toLowerCase();
+      const rawCommand = message.toString('latin1');
 
       if (!(rawDeviceType in Type)) {
         log.debug(`Unknown device type: ${rawDeviceType}`);
@@ -59,20 +59,24 @@ function handleMessages(commandHandler: CommandHandler) {
       const type = rawDeviceType as Type;
       const command = rawCommand as Command;
 
-      const success = commandHandler(rawDeviceName, command);
+      const success = commandExecutor(rawDeviceName, command);
 
       if (!success) {
         return;
       }
 
       try {
-        log.debug(`Settings state for ${rawDeviceType} to ${message}`);
-        client.publish(getStateTopic(type, rawDeviceName), message);
+        log.debug(`Setting state for ${rawDeviceType} ${rawDeviceName} to ${command}`);
+        updateState(type, rawDeviceName, command);
       } catch(err) {
         log.error(`Unable to update state for device ${rawDeviceType}: ${err.message}`);
       }
     }
   });
+}
+
+export async function updateState(deviceType: Type, deviceName: string, state: Command) {
+  await client.publish(getStateTopic(deviceType, deviceName), state);
 }
 
 async function subscribeDevices() {
@@ -110,6 +114,10 @@ async function registerSwitch(type: string, deviceName: string) {
     unique_id: deviceName,
     command_topic: getCommandTopic(type, deviceName),
     state_topic: getStateTopic(type, deviceName),
+    payload_off: Command.off,
+    payload_on: Command.on,
+    state_off: Command.off,
+    state_on: Command.on
   });
   
   log.debug(`Registering ${type} ${deviceName} by sending the following to topic ${topic}: ${message}`);
@@ -120,6 +128,7 @@ async function registerSwitch(type: string, deviceName: string) {
 function getConfigTopic(type: string, deviceName: string) {
   return `${getDeviceTopic(type, deviceName)}/config`;
 }
+
 function getCommandTopic(type: string, deviceName: string) {
   return `${getDeviceTopic(type, deviceName)}/set`;
 }

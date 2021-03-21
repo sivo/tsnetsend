@@ -12,3 +12,6 @@ devices:
     parameters:
       - house: 6008049
         unit: 1
+      - house: 45362
+        unit: 16
+
