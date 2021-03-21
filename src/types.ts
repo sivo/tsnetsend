@@ -1,12 +1,10 @@
 import { protocols } from "./protocols";
 
-export enum Command {
-  on = 'on',
-  off = 'off',
-  dim = 'dim',
-  learn = 'learn',
-  bell = 'bell',
-};
+const commands = ['on', 'off', 'dim', 'learn', 'bell'] as const;
+export type Command = typeof commands[number];
+export function isCommand(command: unknown): command is Command {
+  return commands.includes(command as Command);
+}
 
 export type Operation = Parameters & {
   command: Command;
@@ -20,18 +18,16 @@ export function isOperation(operation: unknown): operation is Operation {
   }
   
   const op = operation as Operation;
-  return !!op.command && !!op.house && !!op.unit && true;
+  return !!op.command && !!op.house && !!op.unit;
 }
 
-export enum Type {
-  switch = 'switch',
-};
+const types = ['switch', 'trigger'] as const;
+export type Type = typeof types[number];
+export function isType(type: unknown): type is Command {
+  return types.includes(type as Type);
+}
 
-export enum Model {
-  selflearning = 'selflearning',
-  codeswitch = 'codeswitch',
-  bell = 'bell',
-};
+export type Model = 'selflearning' | 'codeswitch' | 'bell';
 
 export type Parameters = {
   house: string | number;

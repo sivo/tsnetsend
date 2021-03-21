@@ -26,17 +26,17 @@ export function getPayload(operation: Operation) {
 
   let result = SHORT + String.fromCharCode(255);
 
-  if (operation.command === Command.dim && operation.level === 0) {
-    operation.command = Command.off;
+  if (operation.command === 'dim' && operation.level === 0) {
+    operation.command = 'off';
   }
 
   result += toBits(operation.house, 26); 
 
   result += operation.group === 1 ? ONE : ZERO;
 
-  if (operation.command === Command.dim) {
+  if (operation.command === 'dim') {
     result += SHORT + SHORT + SHORT + SHORT;
-  } else if (operation.command === Command.off) {
+  } else if (operation.command === 'off') {
     result += ZERO;
   } else {
     result += ONE;
@@ -44,7 +44,7 @@ export function getPayload(operation: Operation) {
 
   result += toBits(operation.unit, 4);
   
-  if (operation.command === Command.dim) {
+  if (operation.command === 'dim') {
     if (!operation.level) {
       operation.level = 0;
     }
@@ -87,12 +87,12 @@ export function decodePayload(payload: string): Operation {
   const group = (payload.substr(position, ZERO.length) === ONE) ? 1 : 0;
   position += ZERO.length;
   
-  let command;
+  let command: Command;
   let commandBits = payload.substr(position, ZERO.length);
   if (commandBits[1] === SHORT && commandBits[3] === SHORT) {
-    command = Command.dim;
+    command = 'dim';
   } else if (commandBits[1] === LONG) {
-    command = Command.on;
+    command = 'on';
   }
   position += ZERO.length;
 
@@ -100,7 +100,7 @@ export function decodePayload(payload: string): Operation {
   position += 4 * ZERO.length;
 
   let level;
-  if (command = Command.dim) {
+  if (command = 'dim') {
     level = fromBits(payload.substr(position, 4 * ZERO.length)) * 16;
   }
 
@@ -108,9 +108,9 @@ export function decodePayload(payload: string): Operation {
 }
 
 export function decodeData(data: number): Operation {
-  const house: number = ((data & 0xFFFFFFC0) >> 6 >> 2) >>> 0;
+  const house: number = Math.floor(data / 256);
   const group: number = ((data & 0x20) >> 5 ) >>> 0;
-  const command: Command = (((data & 0x10) >> 4) >>> 0) ? Command.on : Command.off;
+  const command: Command = (((data & 0x10) >> 4) >>> 0) ? 'on' : 'off';
   const unit: number = ((data & 0xf) >>> 0)+ 1;
   return {house, group, command, unit};
 }

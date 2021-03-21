@@ -34,11 +34,11 @@ export default class TellstickNet {
   }
 
   public async on(deviceName: string): Promise<boolean> {
-    return await this.command(deviceName, Command.on);
+    return await this.command(deviceName, 'on');
   }
 
   public async off(deviceName: string): Promise<boolean> {
-    return await this.command(deviceName, Command.off);
+    return await this.command(deviceName, 'off');
   }
 
   public async command(deviceName: string, command: Command): Promise<boolean> {
