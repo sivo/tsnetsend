@@ -1,7 +1,7 @@
 import { createSocket } from "dgram";
 import { getDiscoverPacket, getListenPacket, getSendPacket, decodeMessage } from "./netPackets";
 import { log } from './log';
-import { Command, Value, DeviceConfiguration } from "./types";
+import { Command, DeviceConfiguration } from "./types";
 
 const tasks: PromisedTask<any>[] = [];
 let tasksRunning: boolean;
@@ -62,7 +62,7 @@ export async function sendCommand(host: string, device: DeviceConfiguration, com
   return addTask(sendCommandTask.bind(null, host, device, command));
 }
 
-export async function listen(host: string, callback: (message: Value) => void): Promise<void> {
+export async function listen(host: string, callback: (message: Record<string, unknown> | undefined) => void): Promise<void> {
   return addTask(registerListenerTask.bind(null, host, callback));
 }
 
@@ -137,7 +137,7 @@ async function sendCommandTask(host: string, device: DeviceConfiguration, comman
   });
 }
 
-async function registerListenerTask(host: string, callback: (message: Value) => void): Promise<void> {
+async function registerListenerTask(host: string, callback: (message: Record<string, unknown> | undefined) => void): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const client = createSocket('udp4');
     client.unref();

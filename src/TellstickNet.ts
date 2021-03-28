@@ -1,6 +1,6 @@
 import { log } from './log';
 import { checkAlive, sendCommand, listen } from './netConnection';
-import { Command, DeviceConfiguration, isOperation, Value } from './types';
+import { Command, DeviceConfiguration, isDeviceCommand, Value } from './types';
 
 export default class TellstickNet {
   private devices: Record<string, DeviceConfiguration> = {};
@@ -16,18 +16,11 @@ export default class TellstickNet {
   }
 
   public async listen(callback: (device: DeviceConfiguration, command: Command) => void): Promise<void> {
-    return await listen(this.host, (message: Value) => {
-      console.log('Got value: ', message);
-      if (isOperation(message)) {
-        const matchedDevices = Object.values(this.devices).filter((device: DeviceConfiguration) => {
-          const parametersMatch = device.parameters.some((param) => {
-            return param.house === message.house && 
-              param.unit === message.unit;
-          });
-
-          return parametersMatch;
-        });
-
+    return await listen(this.host, (message: Record<string, unknown> | undefined) => {
+      log.info('Received message: ', message);
+      if (isDeviceCommand(message)) {
+        log.debug('Trying to match devices');
+        const matchedDevices = getMatchingDevices(message, Object.values(this.devices));
         matchedDevices.forEach((device) => callback(device, message.command));
       }
     });
@@ -57,4 +50,18 @@ export default class TellstickNet {
       return false;
     } 
   }
+}
+
+function getMatchingDevices(parameters: Record<string, unknown>, devices: DeviceConfiguration[]) {
+  return devices.filter((device) => {
+    for (const deviceParameter of device.parameters) {
+      for (const [parameter, value] of Object.entries(deviceParameter)) {
+        if ((parameters as typeof deviceParameter)[parameter as keyof typeof deviceParameter] !== value) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  });
 }

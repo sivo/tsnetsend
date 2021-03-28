@@ -1,7 +1,7 @@
 import { getConfiguration, Configuration } from './configuration';
 import { connectAsync, AsyncClient } from 'async-mqtt';
 import { log } from './log';
-import { Command, isCommand, isType, Type } from './types';
+import { Command, DeviceConfiguration, isCommand, isType, Type } from './types';
 
 const register = {
   switch: registerSwitch,
@@ -95,7 +95,7 @@ async function subscribeDevices() {
 async function registerDevices() {
   try {
     for (const device of config.devices) {
-      await register[device.type](device.type, device.name);
+      await register[device.type](device);
       log.info(`Registered device: ${device.name}`);
     }
   } catch (err) {
@@ -113,40 +113,43 @@ async function subscribeTrigger(type: Type, deviceName: string) {
   throw new Error('Subscribing a trigger not implemented yet');
 }
 
-async function registerSwitch(type: Type, deviceName: string) {
-  const topic = getConfigTopic(type, deviceName);
+async function registerSwitch({type, name}: DeviceConfiguration) {
+  const topic = getConfigTopic(type, name);
   const message = JSON.stringify({
-    name: deviceName,
-    unique_id: deviceName,
-    command_topic: getCommandTopic(type, deviceName),
-    state_topic: getStateTopic(type, deviceName),
+    name: name,
+    unique_id: name,
+    command_topic: getCommandTopic(type, name),
+    state_topic: getStateTopic(type, name),
     payload_off: 'off',
     payload_on: 'on',
     state_off: 'off',
     state_on: 'on'
   });
   
-  log.debug(`Registering ${type} ${deviceName} by sending the following to topic ${topic}: ${message}`);
+  log.debug(`Registering ${type} ${name} by sending the following to topic ${topic}: ${message}`);
 
   await client.publish(topic, message);
 }
 
-async function registerTrigger(type: Type, deviceName: string) {
-  throw new Error('Registering a trigger not implemented yet');
+async function registerTrigger(device: DeviceConfiguration) {
+  // Register a trigger (e.g. a remote) as different devices. In Home Assistant, these can be used as state triggers
+  device.parameters.forEach((params, index) => {
+    registerSwitch({...device, type: 'switch', name: `${device.name}_Button_${index + 1}`});
+  });
 }
 
-function getConfigTopic(type: string, deviceName: string) {
+function getConfigTopic(type: Type, deviceName: string) {
   return `${getDeviceTopic(type, deviceName)}/config`;
 }
 
-function getCommandTopic(type: string, deviceName: string) {
+function getCommandTopic(type: Type, deviceName: string) {
   return `${getDeviceTopic(type, deviceName)}/set`;
 }
 
-function getStateTopic(type: string, deviceName: string) {
+function getStateTopic(type: Type, deviceName: string) {
   return `${getDeviceTopic(type, deviceName)}/state`;
 }
 
-function getDeviceTopic(type: string, deviceName: string) {
+function getDeviceTopic(type: Type, deviceName: string) {
   return `${topicPrefix}/${type}/${deviceName}`;
 }

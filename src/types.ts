@@ -6,44 +6,32 @@ export function isCommand(command: unknown): command is Command {
   return commands.includes(command as Command);
 }
 
-export type Operation = Parameters & {
-  command: Command;
-  group?: number;
-  level?: number;
-};
-
-export function isOperation(operation: unknown): operation is Operation {
-  if (typeof operation !== 'object' || operation == null) {
-    return false;
-  }
-  
-  const op = operation as Operation;
-  return !!op.command && !!op.house && !!op.unit;
-}
-
 const types = ['switch', 'trigger'] as const;
 export type Type = typeof types[number];
 export function isType(type: unknown): type is Command {
   return types.includes(type as Type);
 }
 
-export type Model = 'selflearning' | 'codeswitch' | 'bell';
-
-export type Parameters = {
-  house: string | number;
-  unit: number;
-}
+export type Model = 'selflearning' | 'codeswitch' | 'bell' | 'remote';
 
 export type DeviceConfiguration = {
   name: string;
   type: Type;
   protocol: keyof typeof protocols;
   model: Model;
-  parameters: Parameters[];
+  parameters: Record<string, unknown>[];
 }
 
-export type DeviceCommand = Parameters & {
+export type DeviceCommand = Record<string, unknown> & {
   command: Command;
+}
+export function isDeviceCommand(deviceCommand: unknown): deviceCommand is DeviceCommand {
+  if (typeof deviceCommand !== 'object' || deviceCommand == null) {
+    return false;
+  }
+  
+  const op = deviceCommand as DeviceCommand;
+  return isCommand(op.command);
 }
 
 export type Value = number | string | ValueMap | Value[] | undefined;

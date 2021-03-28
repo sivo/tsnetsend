@@ -1,11 +1,11 @@
-import { Command, Operation } from "../types";
+import { Command, DeviceCommand, isCommand } from "../types";
 
 const LONG = '\x7f';
 const SHORT = '\x18';
 const ONE = SHORT + LONG + SHORT + SHORT;
 const ZERO = SHORT + SHORT + SHORT + LONG;
 
-export type Data = {
+type Parameters = {
   house: string | number;
   unit: number;
   group?: number;
@@ -13,9 +13,21 @@ export type Data = {
   command: Command;
 }
 
-export function getPayload(operation: Operation) {
+export function isValidParameters(parameters: Record<string, unknown>): parameters is Parameters {
+  return (typeof parameters.house === 'string' || typeof parameters.house === 'number') &&
+    (typeof parameters.unit === 'number') &&
+    isCommand(parameters.command) &&
+    (parameters.group == null || typeof parameters.group === 'number') &&
+    (parameters.level == null || typeof parameters.level === 'number');
+}
+
+export function getPayload(operation: Record<string, unknown>): string {
+  if (!isValidParameters(operation)) {
+    throw new Error('Invalid parameters for protocol');
+  }
+
   if (typeof operation.house !== 'number') {
-    throw new Error('Arctech house with letters not implemented yet');
+    throw new Error('Arctech house with code switch not implemented yet');
   }
 
   // For compatibility with what is displayed by telldus live
@@ -78,7 +90,7 @@ function fromBits(bits: string): number {
   return parseInt(result, 2);
 }
 
-export function decodePayload(payload: string): Operation {
+function decodePayload(payload: string): DeviceCommand {
   let position = (SHORT + String.fromCharCode(255)).length;
   
   const house = fromBits(payload.substr(position, 26 * ZERO.length));
@@ -107,7 +119,7 @@ export function decodePayload(payload: string): Operation {
   return {house, group, command, unit, level};
 }
 
-export function decodeData(data: number): Operation {
+export function decodeData(data: number): Parameters {
   const house: number = Math.floor(data / 256);
   const group: number = ((data & 0x20) >> 5 ) >>> 0;
   const command: Command = (((data & 0x10) >> 4) >>> 0) ? 'on' : 'off';

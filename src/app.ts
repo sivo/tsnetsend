@@ -23,7 +23,15 @@ async function initialize() {
     try {
       await mqtt.initialize(tellstick.command.bind(tellstick));
       tellstick.listen((device, command) => {
-        mqtt.updateState(device.type, device.name, command);
+        if (device.type === 'switch') {
+          mqtt.updateState(device.type, device.name, command);
+          return;
+        }
+
+        if (device.type === 'trigger') {
+          mqtt.updateState(device.type, device.name, command);
+          return;
+        }
       });
     } catch(err) {
       log.error(`Unable to connect to MQTT: ${err.message}`);
