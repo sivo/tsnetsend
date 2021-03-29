@@ -1,7 +1,7 @@
 import { getConfiguration, Configuration } from './configuration';
 import { connectAsync, AsyncClient } from 'async-mqtt';
 import { log } from './log';
-import { Command, DeviceConfiguration, isCommand, isType, Type } from './types';
+import { Command, DeviceConfiguration, isCommand, isType, ProtocolParameters, Type } from './types';
 
 const register = {
   switch: registerSwitch,
@@ -68,8 +68,13 @@ function handleMessages(commandExecutor: CommandExecutor) {
       }
 
       try {
+        const device = config.devices.find((dev) => dev.name === rawDeviceName);
+        if (!device) {
+          throw new Error(`Device not found: ${rawDeviceName}`);
+        }
+
         log.debug(`Setting state for ${rawDeviceType} ${rawDeviceName} to ${command}`);
-        updateState(type, rawDeviceName, command);
+        updateState(device, undefined, command);
       } catch(err) {
         log.error(`Unable to update state for device ${rawDeviceType}: ${err.message}`);
       }
@@ -77,8 +82,22 @@ function handleMessages(commandExecutor: CommandExecutor) {
   });
 }
 
-export async function updateState(deviceType: Type, deviceName: string, state: Command) {
-  await client.publish(getStateTopic(deviceType, deviceName), state);
+export async function updateState(device: DeviceConfiguration, protocolParameterIndex: number | undefined, state: Command) {
+
+  if (device.type === 'switch') {
+    log.debug(`Updating state for switch ${device.name} to ${state}`);
+    await client.publish(getStateTopic(device.type, device.name), state);
+  }
+
+  if (device.type === 'trigger') {
+    if (protocolParameterIndex === undefined) {
+      throw new Error('Can\'t update state of trigger without button index');
+    }
+
+    log.debug(`Updating state for trigger button ${protocolParameterIndex + 1} on ${device.name} to ${state}`);
+    await client.publish(getStateTopic('switch', `${device.name}_Button_${protocolParameterIndex + 1}`), state);
+  }
+
 }
 
 async function subscribeDevices() {

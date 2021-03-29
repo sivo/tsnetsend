@@ -14,12 +14,19 @@ export function isType(type: unknown): type is Command {
 
 export type Model = 'selflearning' | 'codeswitch' | 'bell' | 'remote';
 
+export type ProtocolParameters = Record<string, unknown>;
+
 export type DeviceConfiguration = {
   name: string;
   type: Type;
   protocol: keyof typeof protocols;
   model: Model;
-  parameters: Record<string, unknown>[];
+  parameters: ProtocolParameters[];
+}
+
+export type DeviceWithIndex = {
+  device: DeviceConfiguration;
+  index: number;
 }
 
 export type DeviceCommand = Record<string, unknown> & {

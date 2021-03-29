@@ -22,14 +22,14 @@ async function initialize() {
   if (config.mqtt.enabled) {
     try {
       await mqtt.initialize(tellstick.command.bind(tellstick));
-      tellstick.listen((device, command) => {
+      tellstick.listen(({device, index}, command) => {
         if (device.type === 'switch') {
-          mqtt.updateState(device.type, device.name, command);
+          mqtt.updateState(device, index, command);
           return;
         }
 
         if (device.type === 'trigger') {
-          mqtt.updateState(device.type, device.name, command);
+          mqtt.updateState(device, index, command);
           return;
         }
       });
