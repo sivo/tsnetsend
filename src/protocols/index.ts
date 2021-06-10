@@ -1,3 +1,4 @@
+import { ValueMap } from '../types';
 import * as arctech from './arctech';
 import * as fineoffset from './fineoffset';
 
@@ -10,7 +11,7 @@ export function isProtocolName(name: unknown): name is ProtocolName {
 
 export interface Protocol {
   getPayload?: (operation: Record<string, unknown>) => string;
-  decodeData: (data: number) => Record<string, unknown>;
+  decodeData: (valueMap: ValueMap) => Record<string, unknown>;
   isValidParameters: (parameters: Record<string, unknown>) => boolean;
 }
 

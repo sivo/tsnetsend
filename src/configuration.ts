@@ -8,6 +8,7 @@ const possibleConfigFiles = [
 ]
 
 export type Configuration = {
+  logLevel: string
   devices: DeviceConfiguration[];
   mqtt: {
     enabled: boolean;

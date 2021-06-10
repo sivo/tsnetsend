@@ -4,7 +4,7 @@ import { Command, isValueMap, DeviceConfiguration } from './types';
 
 export function getSendPacket(device: DeviceConfiguration, command: Command): Buffer {
   const payload = protocols[device.protocol].getPayload?.({...device.parameters[0], command});
-  const data = encode('send') + encode({'S': payload})
+  const data = encode('send') + encode({'S': payload, P: 20, R: 15})
 
   return Buffer.from(data, 'ascii');
 }
@@ -26,7 +26,7 @@ export function decodeMessage(message: Buffer): Record<string, unknown> | undefi
 
     if (isValueMap(value) && isProtocolName(value.protocol) && typeof value.data === 'number') {
       if (protocols[value.protocol]) {
-        return protocols[value.protocol].decodeData(value.data);
+        return protocols[value.protocol].decodeData(value);
       }
     }
   }

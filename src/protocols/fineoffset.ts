@@ -1,3 +1,4 @@
+import { ValueMap } from "../types";
 
 export type Parameters = {
   id: number;
@@ -15,7 +16,12 @@ export function getPayload(): string {
   throw new Error('Not implemented yet');
 }
 
-export function decodeData(data: number): Parameters {
+export function decodeData(valueMap: ValueMap): Parameters {
+  if (typeof valueMap.data !== 'number') {
+    throw new Error('Invalud data format to decode');
+  }
+
+  let data = valueMap.data;
   data = Math.trunc(data / 256);
   const humidity = (data & 0xFF);
   data = Math.trunc(data / 256);

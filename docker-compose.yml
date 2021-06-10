@@ -1,0 +1,13 @@
+version: "2.4"
+services:
+  tsnetsend:
+    image: tsnetsend
+    build: .
+    volumes:
+      - .:/app/tsnetsend
+      - empty:/app/tsnetsend/node_modules:ro
+      - ${CONFIG_FILE}:/config/config.yml
+    command: nodemon --exec "node --inspect=0.0.0.0:9229 -r ts-node/register src/app.ts" --ext yml,ts
+    network_mode: host
+volumes:
+  empty:

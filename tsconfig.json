@@ -5,6 +5,8 @@
     "strict": true,
     "noImplicitAny": true,
 
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "lib",
+    "sourceMap": true
   }
 }

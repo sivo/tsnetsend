@@ -129,7 +129,7 @@ async function subscribeSwitch(type: Type, deviceName: string) {
 }
 
 async function subscribeTrigger(type: Type, deviceName: string) {
-  throw new Error('Subscribing a trigger not implemented yet');
+  log.info('Subscribing a trigger not implemented yet');
 }
 
 async function registerSwitch({type, name}: DeviceConfiguration) {

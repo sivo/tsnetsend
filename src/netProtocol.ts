@@ -40,9 +40,6 @@ export function decode(input: string): Value {
 }
 
 function decodeInternal(input: string): {value: Value, rest: string } {
-  const outputFront = '';
-  const outputEnd = '';
-
   let match;
   match = input.match(nrRegex);
   if (match) {

@@ -5,7 +5,7 @@ import TellstickNet from './TellstickNet';
 
 async function initialize() {
   const config = await getConfiguration();
-  initializeLogger('debug');
+  initializeLogger(process.env.NODE_ENV === 'development' ? 'debug' : config.logLevel);
 
   log.debug('Configuration: %j', config);
 

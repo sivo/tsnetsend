@@ -1,4 +1,4 @@
-import { Command, DeviceCommand, isCommand } from "../types";
+import { Command, DeviceCommand, isCommand, ValueMap } from "../types";
 
 const LONG = '\x7f';
 const SHORT = '\x18';
@@ -26,10 +26,26 @@ export function getPayload(operation: Record<string, unknown>): string {
     throw new Error('Invalid parameters for protocol');
   }
 
-  if (typeof operation.house !== 'number') {
-    throw new Error('Arctech house with code switch not implemented yet');
+  if (typeof operation.house === 'number') {
+    return getPayloadSelfLearning(operation);
+  } else {
+    return getPayloadCodeSwitch(operation);
   }
+}
 
+function getPayloadCodeSwitch(operation: Parameters): string {
+  console.log(operation);
+  
+  let result = '';
+  const houseNumber = (operation.house as string).toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
+  result += toBitsReverse(houseNumber, 4, '$k$k', '$kk$');
+  result += toBitsReverse(operation.unit - 1, 4, '$k$k', '$kk$');
+  result += operation.command === 'on' ? '$k$k$kk$$kk$$kk$$k' : '$k$k$kk$$kk$$k$k$k';
+  
+  return result;
+}
+
+function getPayloadSelfLearning(operation: Parameters): string {
   // For compatibility with what is displayed by telldus live
   operation.unit -= 1;
   if (typeof operation.house === 'number') {
@@ -42,7 +58,7 @@ export function getPayload(operation: Record<string, unknown>): string {
     operation.command = 'off';
   }
 
-  result += toBits(operation.house, 26); 
+  result += toBits(operation.house as number, 26, ZERO, ONE); 
 
   result += operation.group === 1 ? ONE : ZERO;
 
@@ -54,7 +70,7 @@ export function getPayload(operation: Record<string, unknown>): string {
     result += ONE;
   }
 
-  result += toBits(operation.unit, 4);
+  result += toBits(operation.unit, 4, ZERO, ONE);
   
   if (operation.command === 'dim') {
     if (!operation.level) {
@@ -62,21 +78,25 @@ export function getPayload(operation: Record<string, unknown>): string {
     }
 
     const level = Math.ceil(operation.level / 16);
-    result += toBits(level, 4);
+    result += toBits(level, 4, ZERO, ONE);
   }
 
   result += SHORT;
   return result;
 }
 
-function toBits(integer: number, length: number): string {
-  return (integer >>> 0).toString(2).padStart(length, '0').replace(/0/g, ZERO).replace(/1/g, ONE);
+function toBits(integer: number, length: number, zero: string, one: string): string {
+  return (integer >>> 0).toString(2).padStart(length, '0').replace(/0/g, zero).replace(/1/g, one);
+}
+
+function toBitsReverse(integer: number, length: number, zero: string, one: string): string {
+  return (integer >>> 0).toString(2).padStart(length, '0').split('').reverse().join('').replace(/0/g, zero).replace(/1/g, one);
 }
 
 function fromBits(bits: string): number {
   let result = '';
   let chars = Array.from(bits);
-  let a, b, c, d;
+  let a, b, c, d; 
 
   while(chars.length) {
     [a, b, c, d, ...chars] = chars;
@@ -119,10 +139,23 @@ function decodePayload(payload: string): DeviceCommand {
   return {house, group, command, unit, level};
 }
 
-export function decodeData(data: number): Parameters {
-  const house: number = Math.floor(data / 256);
-  const group: number = ((data & 0x20) >> 5 ) >>> 0;
-  const command: Command = (((data & 0x10) >> 4) >>> 0) ? 'on' : 'off';
-  const unit: number = ((data & 0xf) >>> 0)+ 1;
-  return {house, group, command, unit};
+export function decodeData(valueMap: ValueMap): Parameters {
+  if (typeof valueMap.data !== 'number') {
+    throw new Error('Invalud data format to decode');
+  }
+
+  if (valueMap.model === 'selflearning') {
+    const data = valueMap.data;
+    const house: number = Math.floor(data / 256);
+    const group: number = ((data & 0x20) >> 5 ) >>> 0;
+    const command: Command = (((data & 0x10) >> 4) >>> 0) ? 'on' : 'off';
+    const unit: number = ((data & 0xf) >>> 0)+ 1;
+    return {house, group, command, unit};
+  }
+
+  const data = valueMap.data;
+  const house = String.fromCharCode((data % 16) + 'A'.charCodeAt(0));
+  const unit = (data >> 4) % 16;
+  const command = (data >> 11) ? 'on' : 'off';
+  return {house, command, unit};
 }
