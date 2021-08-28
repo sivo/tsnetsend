@@ -3,7 +3,7 @@ import { getConfiguration } from './configuration';
 import * as mqtt from './hassMqtt';
 import TellstickNet from './TellstickNet';
 
-async function initialize() {
+async function start() {
   const config = await getConfiguration();
   initializeLogger(process.env.NODE_ENV === 'development' ? 'debug' : config.logLevel);
 
@@ -21,7 +21,7 @@ async function initialize() {
   
   if (config.mqtt.enabled) {
     try {
-      await mqtt.initialize(tellstick.command.bind(tellstick));
+      await mqtt.start(tellstick.command.bind(tellstick));
       tellstick.listen(({device, index}, command) => {
         if (device.type === 'switch') {
           mqtt.updateState(device, index, command);
@@ -39,5 +39,13 @@ async function initialize() {
   }
 }
 
-initialize();
+async function stop() {
+  mqtt.stop();
+}
 
+start();
+
+setInterval(() => {
+  stop();
+  start();
+}, 3600 * 1000);

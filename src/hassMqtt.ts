@@ -1,7 +1,7 @@
 import { getConfiguration, Configuration } from './configuration';
 import { connectAsync, AsyncClient } from 'async-mqtt';
 import { log } from './log';
-import { Command, DeviceConfiguration, isCommand, isType, ProtocolParameters, Type } from './types';
+import { Command, DeviceConfiguration, isCommand, isType, Type } from './types';
 
 const register = {
   switch: registerSwitch,
@@ -20,7 +20,7 @@ const topicPrefix = 'homeassistant';
 
 export type CommandExecutor = (deviceName: string, command: Command) => Promise<boolean>;
 
-export async function initialize(commandExecutor: CommandExecutor) {
+export async function start(commandExecutor: CommandExecutor) {
   config = await getConfiguration();
   client = await connectAsync(`tcp://${config.mqtt.host}:${config.mqtt.port}`);
 
@@ -58,7 +58,6 @@ function handleMessages(commandExecutor: CommandExecutor) {
         return;
       }
 
-      const type = rawDeviceType as Type;
       const command = rawCommand as Command;
 
       const success = commandExecutor(rawDeviceName, command);
