@@ -1,3 +1,4 @@
+import { Payload } from ".";
 import { ValueMap } from "../types";
 
 export type Parameters = {
@@ -12,8 +13,8 @@ export function isValidParameters(parameters: Record<string, unknown>): paramete
     (typeof parameters.temperature === 'number');
 }
 
-export function getPayload(): string {
-  throw new Error('Not implemented yet');
+export function getPayload(): Payload {
+  throw new Error('Not implemented yet'); 
 }
 
 export function decodeData(valueMap: ValueMap): Parameters {

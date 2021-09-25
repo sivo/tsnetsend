@@ -5,7 +5,7 @@ import { Command, DeviceConfiguration } from "./types";
 
 const tasks: PromisedTask<any>[] = [];
 let tasksRunning: boolean;
-const restPeriod = 500;
+const restPeriod = 250;
 const responseTimeout = 500;
 const discoverPort = 30303;
 const communicationPort = 42314;

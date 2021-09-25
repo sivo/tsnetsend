@@ -47,7 +47,7 @@ export default class TellstickNet {
       log.info(`Executed command ${command} towards device ${deviceName}`);
       return true;
     } catch (err) {
-      log.error(`Unable to execute command ${command} towards device ${deviceName}: ${err.stack}`);
+      log.error(`Unable to execute command ${command} towards device ${deviceName}: ${err}`);
       return false;
     } 
   }

@@ -2,9 +2,32 @@ import { encode, decode } from './netProtocol';
 import { isProtocolName, protocols} from './protocols';
 import { Command, isValueMap, DeviceConfiguration } from './types';
 
+type SendPayload = {
+  S: string;
+  R?: number;
+  P?: number
+}
+
 export function getSendPacket(device: DeviceConfiguration, command: Command): Buffer {
   const payload = protocols[device.protocol].getPayload?.({...device.parameters[0], command});
-  const data = encode('send') + encode({'S': payload, P: 20, R: 15})
+
+  if (!payload?.pulses) {
+    throw new Error(`Did not get appropriate payload for protocol ${device.protocol}`);
+  }
+
+  const sendPayload: SendPayload = {
+    S: payload.pulses
+  }
+
+  if (payload.pause !== undefined) {
+    sendPayload.P = payload.pause;
+  }
+
+  if (payload.repeat !== undefined) {
+    sendPayload.R = payload.repeat;
+  }
+
+  const data = encode('send') + encode(sendPayload); 
 
   return Buffer.from(data, 'ascii');
 }

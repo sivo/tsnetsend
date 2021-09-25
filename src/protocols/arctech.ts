@@ -1,3 +1,4 @@
+import { Payload } from ".";
 import { Command, DeviceCommand, isCommand, ValueMap } from "../types";
 
 const LONG = '\x7f';
@@ -21,19 +22,27 @@ export function isValidParameters(parameters: Record<string, unknown>): paramete
     (parameters.level == null || typeof parameters.level === 'number');
 }
 
-export function getPayload(operation: Record<string, unknown>): string {
+export function getPayload(operation: Record<string, unknown>): Payload {
   if (!isValidParameters(operation)) {
     throw new Error('Invalid parameters for protocol');
   }
 
-  if (typeof operation.house === 'number') {
-    return getPayloadSelfLearning(operation);
-  } else {
-    return getPayloadCodeSwitch(operation);
+  const result = {
+    pulses: '',
+    pause: 10,
+    repeat: 8
   }
+
+  if (typeof operation.house === 'number') {
+    result.pulses = getPulsesSelfLearning(operation);
+  } else {
+    result.pulses = getPulsesCodeSwitch(operation);
+  }
+
+  return result;
 }
 
-function getPayloadCodeSwitch(operation: Parameters): string {
+function getPulsesCodeSwitch(operation: Parameters): string {
   console.log(operation);
   
   let result = '';
@@ -45,7 +54,7 @@ function getPayloadCodeSwitch(operation: Parameters): string {
   return result;
 }
 
-function getPayloadSelfLearning(operation: Parameters): string {
+function getPulsesSelfLearning(operation: Parameters): string {
   // For compatibility with what is displayed by telldus live
   operation.unit -= 1;
   if (typeof operation.house === 'number') {

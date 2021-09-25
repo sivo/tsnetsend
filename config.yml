@@ -14,4 +14,12 @@ devices:
         unit: 1
       - house: 45362
         unit: 16
+  - name: Cotech_1
+    type: switch
+    protocol: text
+    parameters:
+      - on: "&\xe1p%%p%pp%%pp%p%p%%pp%%pp%p%%p%pp%%pp%%p%p%p%p%p%p"
+        off: "&\xe1p%%p%pp%%p%p%pp%p%%pp%p%%pp%%p%pp%%pp%%p%p%p%p%p"
+        pause: 0
+
 
